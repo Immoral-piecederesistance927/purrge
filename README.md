@@ -11,7 +11,7 @@
 
 <br><br>
 
-<img src="assets/dashboard-v2.svg" alt="purrge dashboard after a clean" width="92%">
+<img src="assets/demo.gif" alt="purrge demo — dashboard, settings, live clean" width="92%">
 
 </div>
 
@@ -44,7 +44,7 @@ every run is reported in the log with freed mb, item counts and skips. a cleaner
 
 <div align="center">
 <br>
-<img src="assets/settings-v2.svg" alt="purrge settings panel" width="92%">
+<img src="assets/dashboard-v2.svg" alt="purrge dashboard after a clean" width="92%">
 <br><br>
 </div>
 
