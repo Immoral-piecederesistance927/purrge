@@ -3,7 +3,7 @@ name = "purrge"
 version = "0.1.0"
 description = "keeps your pc awake and periodically purges junk"
 requires-python = ">=3.11"
-dependencies = ["textual>=1.0", "psutil>=6.0"]
+dependencies = ["textual>=1.0", "psutil>=6.0", "pystray>=0.19", "pillow>=10.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pyinstaller>=6.0"]
