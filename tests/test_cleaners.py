@@ -1,7 +1,34 @@
 import os
 import time
 
-from purrge.cleaners import browsercachecleaner, browserspec, sweep, tempcleaner
+from purrge.cleaners import browsercachecleaner, browserspec, cleanresult, run_all, sweep, tempcleaner
+from purrge.config import config
+
+
+class boomcleaner:
+    name = "temp"
+
+    def clean(self):
+        raise RuntimeError("boom")
+
+
+class okcleaner:
+    name = "dns"
+
+    def clean(self):
+        return cleanresult(self.name, items=1)
+
+
+def test_run_all_survives_cleaner_crash():
+    results = run_all(config(), cleaners=[boomcleaner(), okcleaner()])
+    assert results[0].errors == 1
+    assert results[1].items == 1
+
+
+def test_run_all_respects_disabled():
+    cfg = config()
+    cfg.cleaners["temp"] = False
+    assert run_all(cfg, cleaners=[boomcleaner()]) == []
 
 
 def make_old(p):

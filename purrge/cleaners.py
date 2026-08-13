@@ -1,4 +1,6 @@
+import ctypes
 import os
+import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -118,3 +120,88 @@ class browsercachecleaner:
                     result.items += r.items
                     result.skipped += r.skipped
         return result
+
+
+def is_admin():
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except (OSError, AttributeError):
+        return False
+
+
+class luid(ctypes.Structure):
+    _fields_ = [("low", ctypes.c_uint32), ("high", ctypes.c_int32)]
+
+
+class luid_and_attributes(ctypes.Structure):
+    _fields_ = [("luid", luid), ("attributes", ctypes.c_uint32)]
+
+
+class token_privileges(ctypes.Structure):
+    _fields_ = [("count", ctypes.c_uint32), ("privileges", luid_and_attributes * 1)]
+
+
+def enable_privilege(name):
+    advapi = ctypes.windll.advapi32
+    kernel = ctypes.windll.kernel32
+    token = ctypes.c_void_p()
+    if not advapi.OpenProcessToken(kernel.GetCurrentProcess(), 0x28, ctypes.byref(token)):
+        return False
+    value = luid()
+    if not advapi.LookupPrivilegeValueW(None, name, ctypes.byref(value)):
+        kernel.CloseHandle(token)
+        return False
+    privs = token_privileges(1, (luid_and_attributes * 1)(luid_and_attributes(value, 0x2)))
+    ok = advapi.AdjustTokenPrivileges(token, False, ctypes.byref(privs), 0, None, None)
+    kernel.CloseHandle(token)
+    return bool(ok)
+
+
+class ramstandbycleaner:
+    name = "ram_standby"
+
+    def clean(self):
+        result = cleanresult(self.name)
+        if not is_admin():
+            result.skipped = 1
+            return result
+        enable_privilege("SeProfileSingleProcessPrivilege")
+        before = psutil.virtual_memory().available
+        command = ctypes.c_int(4)
+        status = ctypes.windll.ntdll.NtSetSystemInformation(80, ctypes.byref(command), ctypes.sizeof(command))
+        if status != 0:
+            result.errors = 1
+            return result
+        result.items = 1
+        result.freed_bytes = max(0, psutil.virtual_memory().available - before)
+        return result
+
+
+class dnscleaner:
+    name = "dns"
+
+    def clean(self):
+        result = cleanresult(self.name)
+        try:
+            subprocess.run(["ipconfig", "/flushdns"], capture_output=True, check=True, creationflags=0x08000000)
+            result.items = 1
+        except (OSError, subprocess.CalledProcessError):
+            result.errors = 1
+        return result
+
+
+def all_cleaners():
+    return [tempcleaner(), browsercachecleaner(), ramstandbycleaner(), dnscleaner()]
+
+
+def run_all(cfg, cleaners=None):
+    cleaners = cleaners if cleaners is not None else all_cleaners()
+    results = []
+    for c in cleaners:
+        if not cfg.cleaners.get(c.name, False):
+            continue
+        try:
+            results.append(c.clean())
+        except Exception:
+            results.append(cleanresult(c.name, errors=1))
+    return results
