@@ -1,0 +1,38 @@
+import json
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+
+default_cleaners = {"temp": True, "browser_cache": True, "ram_standby": True, "dns": True}
+
+
+@dataclass
+class config:
+    interval_minutes: int = 30
+    cleaners: dict = field(default_factory=lambda: dict(default_cleaners))
+
+
+def config_path():
+    return Path(os.environ["APPDATA"]) / "purrge" / "config.json"
+
+
+def load(path=None):
+    path = path or config_path()
+    try:
+        raw = json.loads(path.read_text())
+        cleaners = dict(default_cleaners)
+        for key, value in raw.get("cleaners", {}).items():
+            if key in default_cleaners:
+                cleaners[key] = bool(value)
+        cfg = config(int(raw.get("interval_minutes", 30)), cleaners)
+    except (OSError, ValueError):
+        cfg = config()
+    cfg.interval_minutes = max(5, min(240, cfg.interval_minutes))
+    save(cfg, path)
+    return cfg
+
+
+def save(cfg, path=None):
+    path = path or config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"interval_minutes": cfg.interval_minutes, "cleaners": cfg.cleaners}, indent=2))
