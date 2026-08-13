@@ -122,6 +122,84 @@ class browsercachecleaner:
         return result
 
 
+def default_discord_specs():
+    roaming = Path(os.environ.get("APPDATA", "."))
+    return [browserspec("discord", "discord.exe", roaming / "discord", ["cache", "code cache", "gpucache"])]
+
+
+class discordcleaner(browsercachecleaner):
+    name = "discord"
+
+    def __init__(self, specs=None, running=None):
+        super().__init__(specs if specs is not None else default_discord_specs(), running)
+
+
+def default_thumb_root():
+    return Path(os.environ.get("LOCALAPPDATA", ".")) / "microsoft" / "windows" / "explorer"
+
+
+class thumbcleaner:
+    name = "thumbnails"
+
+    def __init__(self, root=None):
+        self.root = root if root is not None else default_thumb_root()
+
+    def clean(self):
+        result = cleanresult(self.name)
+        if not self.root.exists():
+            return result
+        for p in list(self.root.glob("thumbcache_*.db")) + list(self.root.glob("iconcache_*.db")):
+            try:
+                size = p.stat().st_size
+                p.unlink()
+                result.freed_bytes += size
+                result.items += 1
+            except OSError:
+                result.skipped += 1
+        return result
+
+
+def default_shader_roots():
+    local = Path(os.environ.get("LOCALAPPDATA", "."))
+    return [local / "d3dscache", local / "nvidia" / "dxcache", local / "nvidia" / "glcache"]
+
+
+class shadercleaner(tempcleaner):
+    name = "shader_cache"
+
+    def __init__(self, roots=None):
+        super().__init__(roots if roots is not None else default_shader_roots())
+
+
+def default_wer_roots():
+    local = Path(os.environ.get("LOCALAPPDATA", ".")) / "microsoft" / "windows" / "wer"
+    progdata = Path(os.environ.get("PROGRAMDATA", r"c:\programdata")) / "microsoft" / "windows" / "wer"
+    return [local / "reportqueue", local / "reportarchive", progdata / "reportqueue", progdata / "reportarchive"]
+
+
+class wercleaner(tempcleaner):
+    name = "crash_dumps"
+
+    def __init__(self, roots=None):
+        super().__init__(roots if roots is not None else default_wer_roots())
+
+
+def default_wu_roots():
+    return [Path(os.environ.get("SYSTEMROOT", r"c:\windows")) / "softwaredistribution" / "download"]
+
+
+class wucleaner(tempcleaner):
+    name = "windows_update"
+
+    def __init__(self, roots=None):
+        super().__init__(roots if roots is not None else default_wu_roots())
+
+    def clean(self):
+        if not is_admin():
+            return cleanresult(self.name, skipped=1)
+        return super().clean()
+
+
 def is_admin():
     try:
         return bool(ctypes.windll.shell32.IsUserAnAdmin())
@@ -191,7 +269,17 @@ class dnscleaner:
 
 
 def all_cleaners():
-    return [tempcleaner(), browsercachecleaner(), ramstandbycleaner(), dnscleaner()]
+    return [
+        tempcleaner(),
+        browsercachecleaner(),
+        discordcleaner(),
+        thumbcleaner(),
+        wercleaner(),
+        shadercleaner(),
+        wucleaner(),
+        ramstandbycleaner(),
+        dnscleaner(),
+    ]
 
 
 def run_all(cfg, cleaners=None):

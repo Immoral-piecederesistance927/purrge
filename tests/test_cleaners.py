@@ -1,7 +1,19 @@
 import os
 import time
 
-from purrge.cleaners import browsercachecleaner, browserspec, cleanresult, run_all, sweep, tempcleaner
+from purrge.cleaners import (
+    browsercachecleaner,
+    browserspec,
+    cleanresult,
+    discordcleaner,
+    run_all,
+    shadercleaner,
+    sweep,
+    tempcleaner,
+    thumbcleaner,
+    wercleaner,
+    wucleaner,
+)
 from purrge.config import config
 
 
@@ -29,6 +41,76 @@ def test_run_all_respects_disabled():
     cfg = config()
     cfg.cleaners["temp"] = False
     assert run_all(cfg, cleaners=[boomcleaner()]) == []
+
+
+def test_discord_cleaner_skips_when_running(tmp_path):
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    f = cache / "data_0"
+    f.write_text("x" * 5)
+    spec = browserspec("discord", "discord.exe", tmp_path, ["cache"])
+    r = discordcleaner(specs=[spec], running=lambda name: True).clean()
+    assert r.name == "discord"
+    assert f.exists()
+    assert r.skipped == 1
+
+
+def test_discord_cleaner_cleans_when_closed(tmp_path):
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    f = cache / "data_0"
+    f.write_text("x" * 5)
+    spec = browserspec("discord", "discord.exe", tmp_path, ["cache"])
+    r = discordcleaner(specs=[spec], running=lambda name: False).clean()
+    assert not f.exists()
+    assert r.freed_bytes == 5
+
+
+def test_thumb_cleaner_only_touches_cache_dbs(tmp_path):
+    db = tmp_path / "thumbcache_256.db"
+    db.write_text("x" * 20)
+    icon = tmp_path / "iconcache_32.db"
+    icon.write_text("x" * 10)
+    other = tmp_path / "notes.txt"
+    other.write_text("keep")
+    r = thumbcleaner(root=tmp_path).clean()
+    assert not db.exists()
+    assert not icon.exists()
+    assert other.exists()
+    assert r.freed_bytes == 30
+    assert r.items == 2
+
+
+def test_thumb_cleaner_missing_root(tmp_path):
+    r = thumbcleaner(root=tmp_path / "nope").clean()
+    assert r.items == 0
+
+
+def test_shader_and_wer_cleaners_sweep_roots(tmp_path):
+    f = tmp_path / "old.bin"
+    f.write_text("x" * 7)
+    make_old(f)
+    assert shadercleaner(roots=[tmp_path]).name == "shader_cache"
+    r = shadercleaner(roots=[tmp_path]).clean()
+    assert r.freed_bytes == 7
+    g = tmp_path / "report.wer"
+    g.write_text("x" * 3)
+    make_old(g)
+    assert wercleaner(roots=[tmp_path]).clean().freed_bytes == 3
+
+
+def test_wu_cleaner_requires_admin(tmp_path, monkeypatch):
+    import purrge.cleaners
+    monkeypatch.setattr(purrge.cleaners, "is_admin", lambda: False)
+    f = tmp_path / "old.cab"
+    f.write_text("x")
+    make_old(f)
+    r = wucleaner(roots=[tmp_path]).clean()
+    assert f.exists()
+    assert r.skipped == 1
+    monkeypatch.setattr(purrge.cleaners, "is_admin", lambda: True)
+    r = wucleaner(roots=[tmp_path]).clean()
+    assert not f.exists()
 
 
 def make_old(p):
