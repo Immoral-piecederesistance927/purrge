@@ -223,7 +223,8 @@ def enable_privilege(name):
     advapi = ctypes.windll.advapi32
     kernel = ctypes.windll.kernel32
     token = ctypes.c_void_p()
-    if not advapi.OpenProcessToken(kernel.GetCurrentProcess(), 0x28, ctypes.byref(token)):
+    process = ctypes.c_void_p(-1)
+    if not advapi.OpenProcessToken(process, 0x28, ctypes.byref(token)):
         return False
     value = luid()
     if not advapi.LookupPrivilegeValueW(None, name, ctypes.byref(value)):
