@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install . pyinstaller
-      - run: pyinstaller --onefile --name purrge --uac-admin --collect-submodules textual entry.py
+      - run: pyinstaller --onefile --name purrge --uac-admin --collect-submodules textual --hidden-import pystray._win32 entry.py
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/purrge.exe

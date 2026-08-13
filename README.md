@@ -32,25 +32,42 @@ it's built for machines that stay on: download rigs, home servers, rdp boxes, th
 | --- | --- | --- |
 | 🗑️ **temp** | sweeps `%TEMP%` and `c:\windows\temp`, files older than 1 hour | anything locked or in use, `_mei*` dirs of running apps |
 | 🌐 **browser cache** | chrome, edge and firefox cache folders — only while that browser is closed | history, cookies, passwords, sessions |
-| 🧠 **ram standby** | purges the standby memory list so active apps get fresh ram | anything a running process owns |
+| 💬 **discord** | discord's cache, code cache and gpu cache — only while discord is closed | your messages, settings, login |
+| 🖼️ **thumbnails** | explorer's `thumbcache_*.db` / `iconcache_*.db` files | any actual image or file |
+| 💥 **crash dumps** | windows error reporting queues and archives | live dumps being written |
+| 🎮 **shader cache** | directx and nvidia shader caches older than 1 hour | caches in active use |
+| 🔄 **windows update** | leftover update downloads in `softwaredistribution\download` (admin) | installed updates |
+| 🧠 **ram standby** | purges the standby memory list so active apps get fresh ram (admin) | anything a running process owns |
 | 📡 **dns** | flushes the resolver cache | your network settings |
 
 every run is reported in the log with freed mb, item counts and skips. a cleaner that fails just logs and steps aside — it can never crash the app or block the others.
 
 <div align="center">
 <br>
-<img src="assets/startup.svg" alt="purrge right after startup" width="92%">
+<img src="assets/settings.svg" alt="purrge settings panel" width="92%">
 <br><br>
 </div>
 
-## keys
+## controls
+
+everything is clickable — buttons for clean / awake / settings / tray, checkboxes in settings. or use the keys:
 
 | key | action |
 | :---: | --- |
 | `c` | clean now, don't wait for the timer |
 | `a` | toggle keep-awake on/off |
+| `s` | settings — toggle each cleaner, change the interval |
+| `h` | hide to the system tray (the cat icon brings it back) |
 | `+` / `-` | clean interval +5 / −5 minutes (saved instantly) |
 | `q` | quit — power settings go back to normal |
+
+## headless mode
+
+`purrge clean` runs every enabled cleaner once, prints a summary table and exits — no dashboard. perfect for task scheduler jobs and servers:
+
+```console
+purrge clean
+```
 
 ## get it
 
@@ -73,7 +90,7 @@ python -m purrge
 
 ```console
 pip install -e .[dev]
-pyinstaller --onefile --name purrge --uac-admin --collect-submodules textual entry.py
+pyinstaller --onefile --name purrge --uac-admin --collect-submodules textual --hidden-import pystray._win32 entry.py
 ```
 
 or just push a `v*` tag — github actions builds the exe on a windows runner and attaches it to a release.
@@ -88,11 +105,19 @@ lives at `%APPDATA%\purrge\config.json`, edited live from the dashboard or by ha
   "cleaners": {
     "temp": true,
     "browser_cache": true,
+    "discord": true,
+    "thumbnails": true,
+    "crash_dumps": true,
+    "shader_cache": true,
+    "windows_update": true,
     "ram_standby": true,
     "dns": true
-  }
+  },
+  "total_freed_bytes": 0
 }
 ```
+
+`total_freed_bytes` is your all-time counter — purrge shows it in the header and keeps growing it across sessions.
 
 ## design notes
 
