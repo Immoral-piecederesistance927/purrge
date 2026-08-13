@@ -6,3 +6,5 @@ dist/
 *.spec
 *.egg-info/
 .venv/
+docs/
+assets/raw/
