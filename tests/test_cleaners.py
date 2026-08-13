@@ -1,7 +1,7 @@
 import os
 import time
 
-from purrge.cleaners import sweep, tempcleaner
+from purrge.cleaners import browsercachecleaner, browserspec, sweep, tempcleaner
 
 
 def make_old(p):
@@ -61,3 +61,25 @@ def test_sweep_leaves_mei_dirs_alone(tmp_path):
 def test_sweep_missing_root(tmp_path):
     r = sweep(tmp_path / "nope")
     assert r.items == 0
+
+
+def test_browser_cleaner_skips_running_browser(tmp_path):
+    cache = tmp_path / "default" / "cache"
+    cache.mkdir(parents=True)
+    f = cache / "f_000001"
+    f.write_text("x" * 10)
+    spec = browserspec("chrome", "chrome.exe", tmp_path, ["*/cache"])
+    r = browsercachecleaner(specs=[spec], running=lambda name: True).clean()
+    assert f.exists()
+    assert r.skipped == 1
+
+
+def test_browser_cleaner_cleans_closed_browser(tmp_path):
+    cache = tmp_path / "default" / "cache"
+    cache.mkdir(parents=True)
+    f = cache / "f_000001"
+    f.write_text("x" * 10)
+    spec = browserspec("chrome", "chrome.exe", tmp_path, ["*/cache"])
+    r = browsercachecleaner(specs=[spec], running=lambda name: False).clean()
+    assert not f.exists()
+    assert r.freed_bytes == 10
