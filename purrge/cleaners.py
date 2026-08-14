@@ -1,11 +1,23 @@
 import ctypes
 import os
 import subprocess
+import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import psutil
+
+from purrge.config import default_cleaners
+
+win_only = {"thumbnails", "shader_cache", "windows_update", "ram_standby"}
+
+
+def supported_names():
+    if sys.platform == "win32":
+        return list(default_cleaners)
+    return [name for name in default_cleaners if name not in win_only]
 
 
 @dataclass
@@ -49,6 +61,8 @@ def sweep(root, min_age_seconds=0):
 
 
 def default_temp_roots():
+    if sys.platform != "win32":
+        return [Path(tempfile.gettempdir())]
     roots = []
     tmp = os.environ.get("TEMP")
     if tmp:
@@ -84,6 +98,13 @@ class browserspec:
 
 
 def default_browser_specs():
+    if sys.platform == "darwin":
+        caches = Path.home() / "Library" / "Caches"
+        return [
+            browserspec("chrome", "google chrome", caches / "Google" / "Chrome", ["*"]),
+            browserspec("edge", "microsoft edge", caches / "Microsoft Edge", ["*"]),
+            browserspec("firefox", "firefox", caches / "Firefox" / "Profiles", ["*/cache2"]),
+        ]
     local = Path(os.environ.get("LOCALAPPDATA", "."))
     return [
         browserspec("chrome", "chrome.exe", local / "google" / "chrome" / "user data", ["*/cache", "*/code cache"]),
@@ -123,6 +144,9 @@ class browsercachecleaner:
 
 
 def default_discord_specs():
+    if sys.platform == "darwin":
+        root = Path.home() / "Library" / "Application Support" / "discord"
+        return [browserspec("discord", "discord", root, ["Cache", "Code Cache", "GPUCache"])]
     roaming = Path(os.environ.get("APPDATA", "."))
     return [browserspec("discord", "discord.exe", roaming / "discord", ["cache", "code cache", "gpucache"])]
 
@@ -172,6 +196,8 @@ class shadercleaner(tempcleaner):
 
 
 def default_wer_roots():
+    if sys.platform == "darwin":
+        return [Path.home() / "Library" / "Logs" / "DiagnosticReports"]
     local = Path(os.environ.get("LOCALAPPDATA", ".")) / "microsoft" / "windows" / "wer"
     progdata = Path(os.environ.get("PROGRAMDATA", r"c:\programdata")) / "microsoft" / "windows" / "wer"
     return [local / "reportqueue", local / "reportarchive", progdata / "reportqueue", progdata / "reportarchive"]
@@ -201,6 +227,8 @@ class wucleaner(tempcleaner):
 
 
 def is_admin():
+    if sys.platform != "win32":
+        return os.geteuid() == 0
     try:
         return bool(ctypes.windll.shell32.IsUserAnAdmin())
     except (OSError, AttributeError):
@@ -256,13 +284,20 @@ class ramstandbycleaner:
         return result
 
 
+def dns_command():
+    if sys.platform == "darwin":
+        return ["dscacheutil", "-flushcache"]
+    return ["ipconfig", "/flushdns"]
+
+
 class dnscleaner:
     name = "dns"
 
     def clean(self):
         result = cleanresult(self.name)
+        flags = 0x08000000 if sys.platform == "win32" else 0
         try:
-            subprocess.run(["ipconfig", "/flushdns"], capture_output=True, check=True, creationflags=0x08000000)
+            subprocess.run(dns_command(), capture_output=True, check=True, creationflags=flags)
             result.items = 1
         except (OSError, subprocess.CalledProcessError):
             result.errors = 1
@@ -270,17 +305,18 @@ class dnscleaner:
 
 
 def all_cleaners():
-    return [
-        tempcleaner(),
-        browsercachecleaner(),
-        discordcleaner(),
-        thumbcleaner(),
-        wercleaner(),
-        shadercleaner(),
-        wucleaner(),
-        ramstandbycleaner(),
-        dnscleaner(),
-    ]
+    instances = {
+        "temp": tempcleaner,
+        "browser_cache": browsercachecleaner,
+        "discord": discordcleaner,
+        "thumbnails": thumbcleaner,
+        "crash_dumps": wercleaner,
+        "shader_cache": shadercleaner,
+        "windows_update": wucleaner,
+        "ram_standby": ramstandbycleaner,
+        "dns": dnscleaner,
+    }
+    return [instances[name]() for name in supported_names()]
 
 
 def run_all(cfg, cleaners=None):

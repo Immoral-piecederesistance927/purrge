@@ -99,6 +99,26 @@ def test_shader_and_wer_cleaners_sweep_roots(tmp_path):
     assert wercleaner(roots=[tmp_path]).clean().freed_bytes == 3
 
 
+def test_supported_names_per_platform(monkeypatch):
+    import sys
+    from purrge.cleaners import supported_names
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert "shader_cache" in supported_names()
+    assert len(supported_names()) == 9
+    monkeypatch.setattr(sys, "platform", "darwin")
+    names = supported_names()
+    assert names == ["temp", "browser_cache", "discord", "crash_dumps", "dns"]
+
+
+def test_dns_command_per_platform(monkeypatch):
+    import sys
+    from purrge.cleaners import dns_command
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert dns_command() == ["ipconfig", "/flushdns"]
+    monkeypatch.setattr(sys, "platform", "darwin")
+    assert dns_command() == ["dscacheutil", "-flushcache"]
+
+
 def test_wu_cleaner_requires_admin(tmp_path, monkeypatch):
     import purrge.cleaners
     monkeypatch.setattr(purrge.cleaners, "is_admin", lambda: False)
