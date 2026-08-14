@@ -1,4 +1,4 @@
-Output assets/demo.gif
+Output assets/demo-v3.gif
 Set Shell "powershell"
 Set FontSize 15
 Set Width 1500
@@ -13,7 +13,15 @@ Sleep 5s
 Type "s"
 Sleep 3s
 Escape
+Sleep 1s
+Type "t"
 Sleep 1.5s
+Type "t"
+Sleep 1.5s
+Type "t"
+Sleep 1.5s
+Type "t"
+Sleep 1s
 Type "c"
 Sleep 9s
 Type "q"

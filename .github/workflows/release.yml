@@ -9,14 +9,25 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            flags: --uac-admin --collect-submodules textual --hidden-import pystray._win32
+            artifact: purrge.exe
+          - os: macos-latest
+            flags: --collect-submodules textual
+            artifact: purrge-macos
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install . pyinstaller
-      - run: pyinstaller --onefile --name purrge --uac-admin --collect-submodules textual --hidden-import pystray._win32 entry.py
+      - run: pyinstaller --onefile --name purrge ${{ matrix.flags }} entry.py
+      - if: runner.os == 'macOS'
+        run: mv dist/purrge dist/purrge-macos
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/purrge.exe
+          files: dist/${{ matrix.artifact }}

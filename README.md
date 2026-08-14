@@ -4,14 +4,14 @@
 
 **keeps your pc awake. purges the junk. looks good doing it.**
 
-<img src="https://img.shields.io/badge/platform-windows%2010%20·%2011%20·%20server-b4befe?style=for-the-badge&labelColor=1e1e2e" alt="platform">
+<img src="https://img.shields.io/badge/platform-windows%20·%20macos-b4befe?style=for-the-badge&labelColor=1e1e2e" alt="platform">
 <img src="https://img.shields.io/badge/python-3.11+-a6e3a1?style=for-the-badge&labelColor=1e1e2e" alt="python">
 <img src="https://img.shields.io/badge/theme-catppuccin%20mocha-cba6f7?style=for-the-badge&labelColor=1e1e2e" alt="theme">
 <img src="https://img.shields.io/badge/tui-textual-fab387?style=for-the-badge&labelColor=1e1e2e" alt="textual">
 
 <br><br>
 
-<img src="assets/demo.gif" alt="purrge demo — dashboard, settings, live clean" width="92%">
+<img src="assets/demo-v3.gif" alt="purrge demo — dashboard, settings, live clean" width="92%">
 
 </div>
 
@@ -19,12 +19,12 @@
 
 ## what is this
 
-purrge is a single-exe terminal dashboard for windows that does two things, forever, quietly:
+purrge is a single-binary terminal dashboard for windows and macos that does two things, forever, quietly:
 
-1. **keeps the machine awake** — it tells windows "no sleep, no display-off" through the official `SetThreadExecutionState` api. no mouse-jiggling, no fake keypresses, no dummy video playing in a corner. flip it off any time with one key.
+1. **keeps the machine awake** — the official os api (`SetThreadExecutionState` on windows, `caffeinate` on macos), no mouse-jiggling, no fake keypresses, no dummy video playing in a corner. flip it off any time with one key.
 2. **purges junk on a schedule** — every 30 minutes (tune it from 5 to 240) it sweeps the stuff that quietly piles up and drags a long-running machine down, then tells you exactly how much it freed.
 
-it's built for machines that stay on: download rigs, home servers, rdp boxes, that laptop in the corner running things overnight.
+it's built for machines that stay on: download rigs, home servers, rdp boxes, that laptop in the corner running things overnight. live cpu/ram sparklines, toast notifications, and all four catppuccin flavors — cycle mocha → macchiato → frappé → latte with one key.
 
 ## the cleaners
 
@@ -33,18 +33,20 @@ it's built for machines that stay on: download rigs, home servers, rdp boxes, th
 | 🗑️ **temp** | sweeps `%TEMP%` and `c:\windows\temp`, files older than 1 hour | anything locked or in use, `_mei*` dirs of running apps |
 | 🌐 **browser cache** | chrome, edge and firefox cache folders — only while that browser is closed | history, cookies, passwords, sessions |
 | 💬 **discord** | discord's cache, code cache and gpu cache — only while discord is closed | your messages, settings, login |
-| 🖼️ **thumbnails** | explorer's `thumbcache_*.db` / `iconcache_*.db` files | any actual image or file |
-| 💥 **crash dumps** | windows error reporting queues and archives | live dumps being written |
-| 🎮 **shader cache** | directx and nvidia shader caches older than 1 hour | caches in active use |
-| 🔄 **windows update** | leftover update downloads in `softwaredistribution\download` (admin) | installed updates |
-| 🧠 **ram standby** | purges the standby memory list so active apps get fresh ram (admin) | anything a running process owns |
+| 🖼️ **thumbnails** | explorer's `thumbcache_*.db` / `iconcache_*.db` files *(windows)* | any actual image or file |
+| 💥 **crash dumps** | error reporting queues and archives, diagnostic reports on macos | live dumps being written |
+| 🎮 **shader cache** | directx and nvidia shader caches older than 1 hour *(windows)* | caches in active use |
+| 🔄 **windows update** | leftover update downloads in `softwaredistribution\download` *(windows, admin)* | installed updates |
+| 🧠 **ram standby** | purges the standby memory list so active apps get fresh ram *(windows, admin)* | anything a running process owns |
 | 📡 **dns** | flushes the resolver cache | your network settings |
+
+windows-only cleaners simply don't appear on macos — the dashboard shows what your platform supports.
 
 every run is reported in the log with freed mb, item counts and skips. a cleaner that fails just logs and steps aside — it can never crash the app or block the others.
 
 <div align="center">
 <br>
-<img src="assets/dashboard-v2.svg" alt="purrge dashboard after a clean" width="92%">
+<img src="assets/dashboard-v3.svg" alt="purrge dashboard after a clean" width="92%">
 <br><br>
 </div>
 
@@ -57,7 +59,8 @@ everything is clickable — buttons for clean / awake / settings / tray, checkbo
 | `c` | clean now, don't wait for the timer |
 | `a` | toggle keep-awake on/off |
 | `s` | settings — toggle each cleaner, change the interval |
-| `h` | hide to the system tray (the cat icon brings it back) |
+| `t` | cycle theme: mocha → macchiato → frappé → latte |
+| `h` | hide to the system tray (the cat icon brings it back, windows) |
 | `+` / `-` | clean interval +5 / −5 minutes (saved instantly) |
 | `q` | quit — power settings go back to normal |
 
@@ -71,11 +74,10 @@ purrge clean
 
 ## get it
 
-grab `purrge.exe` from the [latest release](../../releases/latest) and run it. that's the whole install.
+grab it from the [latest release](../../releases/latest) — that's the whole install.
 
-windows asks for admin once at launch — that's what the ram standby purge needs. everything else works without it; if you deny elevation, that cleaner just reports itself skipped.
-
-works on windows 10, windows 11 and windows server 2016+. on a server over rdp: disconnect (don't sign out) and purrge keeps running.
+- **windows:** `purrge.exe`. asks for admin once at launch — that's what the ram standby purge needs; deny it and that cleaner just reports itself skipped. works on windows 10, 11 and server 2016+. on a server over rdp: disconnect (don't sign out) and purrge keeps running.
+- **macos:** `purrge-macos`. first run: `chmod +x purrge-macos && ./purrge-macos` (unsigned binary — macos may ask you to allow it in system settings → privacy & security).
 
 ## run from source
 
@@ -91,6 +93,12 @@ python -m purrge
 ```console
 pip install -e .[dev]
 pyinstaller --onefile --name purrge --uac-admin --collect-submodules textual --hidden-import pystray._win32 entry.py
+```
+
+on macos drop the windows flags:
+
+```console
+pyinstaller --onefile --name purrge --collect-submodules textual entry.py
 ```
 
 or just push a `v*` tag — github actions builds the exe on a windows runner and attaches it to a release.
