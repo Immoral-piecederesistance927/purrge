@@ -55,6 +55,15 @@ def test_interval_clamped(tmp_path):
     assert cfg.cleaners["dns"] is True
 
 
+def test_theme_default_and_validation(tmp_path):
+    p = tmp_path / "config.json"
+    assert load(p).theme == "mocha"
+    p.write_text(json.dumps({"theme": "latte"}))
+    assert load(p).theme == "latte"
+    p.write_text(json.dumps({"theme": "dracula"}))
+    assert load(p).theme == "mocha"
+
+
 def test_save_roundtrip(tmp_path):
     p = tmp_path / "config.json"
     cfg = load(p)
